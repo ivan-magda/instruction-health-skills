@@ -1,6 +1,6 @@
 # Instruction Health Skills
 
-Agent skills to keep AI assistant instruction files (AGENTS.md, CLAUDE.md, MEMORY.md) lean and healthy. Two complementary skills: a reactive **guardian** that runs before an instruction file is edited to prevent bloat, and a three-phase **cleanup** for files that have already grown too large. Designed to work with Claude, Cursor, Windsurf, Copilot, and other AI coding assistants that support the Agent Skills / AGENTS.md format.
+Agent skills to keep AI assistant instruction files (AGENTS.md, CLAUDE.md, MEMORY.md) lean. Two complementary skills: a reactive **guardian** that runs before an instruction file is edited to prevent bloat, and a three-phase **cleanup** for files that have already grown too large. Designed to work with Claude, Cursor, Windsurf, Copilot, Codex, and other AI coding assistants that support the Agent Skills / AGENTS.md format.
 
 ## Why These Skills Exist
 
@@ -39,17 +39,12 @@ instruction-health-skills/
 
 ## Coverage
 
-| Skill | When it triggers | What it does |
-| ----- | ---------------- | ------------ |
-| `instruction-guardian` | Before any edit to CLAUDE.md / AGENTS.md / MEMORY.md / `.claude/rules/` | Runs a six-step checklist: line budget, dedup check, litmus test, destination routing, format rules, `@`-import prevention. Politely pushes back when content doesn't belong in an instruction file. |
-| `instruction-cleanup` | After files have already grown past ~200 lines or ~40k chars (agent performance has degraded) | Three-phase audit → plan → implement procedure. Measures the full context-budget surface area, classifies every section, restructures with a needle-grep verification step. |
+| Skill | When to use it | What it does |
+| ----- | -------------- | ------------ |
+| `instruction-guardian` | Day-to-day gate — runs before *every* edit to CLAUDE.md / AGENTS.md / MEMORY.md / `.claude/rules/`, keeping files from re-bloating. | Runs a six-step checklist: line budget, dedup check, litmus test, destination routing, format rules, `@`-import prevention. Politely pushes back when content doesn't belong in an instruction file. |
+| `instruction-cleanup` | One-time fix — run when files have already grown past ~200 lines or ~40k chars and agent performance has degraded. Produces a written plan you approve before anything is rewritten. | Three-phase audit → plan → implement procedure. Measures the full context-budget surface area, classifies every section, restructures with a needle-grep verification step. |
 
-## When to Use Which
-
-- Use **`instruction-guardian`** as a day-to-day gate — on *every* edit to an instruction file. Keeps files from re-bloating.
-- Use **`instruction-cleanup`** once, when you realize the files are already too large. It produces a written plan you approve before anything is rewritten.
-
-The two are designed to be used together: cleanup fixes the past, guardian prevents the future.
+Cleanup fixes the past, guardian prevents the future.
 
 ## How to Use These Skills
 
