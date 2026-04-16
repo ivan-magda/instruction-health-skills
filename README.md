@@ -1,10 +1,10 @@
 # Instruction Health Skills
 
-A Claude Code plugin for keeping AGENTS.md / CLAUDE.md / MEMORY.md files lean. Two complementary skills: a reactive guardian that runs **before** an instruction file is edited, and a restructuring cleanup for files that have already grown bloated. Designed to work with Claude, Cursor, Windsurf, Copilot, and other AI coding assistants that support the Agent Skills / AGENTS.md format.
+Agent skills to keep AI assistant instruction files (AGENTS.md, CLAUDE.md, MEMORY.md) lean and healthy. Two complementary skills: a reactive **guardian** that runs before an instruction file is edited to prevent bloat, and a three-phase **cleanup** for files that have already grown too large. Designed to work with Claude, Cursor, Windsurf, Copilot, and other AI coding assistants that support the Agent Skills / AGENTS.md format.
 
 ## Philosophy
 
-This plugin focuses on **facts about context-budget hygiene**, not opinions about what belongs in your instruction file.
+These skills focus on **facts about context-budget hygiene**, not opinions about what belongs in your instruction file.
 
 **Covered:**
 
@@ -31,7 +31,7 @@ instruction-health-skills/
     └── SKILL.md                         # Six-step pre-write checklist
 ```
 
-## The Two Skills
+## Coverage
 
 | Skill | When it triggers | What it does |
 | ----- | ---------------- | ------------ |
@@ -45,9 +45,9 @@ instruction-health-skills/
 
 The two are designed to be used together: cleanup fixes the past, guardian prevents the future.
 
-## How to Use This Plugin
+## How to Use These Skills
 
-### Option A: Using skills.sh
+### Option A: Using skills.sh (recommended)
 
 Install each skill independently. Two commands install both:
 
