@@ -25,7 +25,6 @@ instruction-health-skills/
 ├── .claude-plugin/
 │   ├── plugin.json                      # Claude Code plugin manifest
 │   └── marketplace.json                 # Claude Code marketplace catalog
-├── AGENTS.md                            # Meta-rules for AI agents
 ├── instruction-cleanup/
 │   └── SKILL.md                         # Three-phase restructuring procedure
 └── instruction-guardian/
