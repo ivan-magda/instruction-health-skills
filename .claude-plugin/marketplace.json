@@ -1,0 +1,35 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "instruction-health-skills",
+  "version": "1.0.0",
+  "owner": {
+    "name": "Ivan Magda"
+  },
+  "metadata": {
+    "description": "Skills for keeping Claude Code / AGENTS.md instruction files lean: a reactive guardian and a restructuring cleanup."
+  },
+  "plugins": [
+    {
+      "name": "instruction-health",
+      "description": "Keep CLAUDE.md, AGENTS.md, and related instruction files lean and healthy. Includes a reactive guardian for pre-write checks and a three-phase cleanup for restructuring bloated files.",
+      "repository": "https://github.com/ivan-magda/instruction-health-skills",
+      "version": "1.0.0",
+      "author": {
+        "name": "Ivan Magda"
+      },
+      "license": "MIT",
+      "category": "development",
+      "keywords": [
+        "claude-code",
+        "agents-md",
+        "instruction-files",
+        "context-budget",
+        "skills",
+        "memory",
+        "ai-agents",
+        "prompt-engineering"
+      ],
+      "source": "./"
+    }
+  ]
+}
