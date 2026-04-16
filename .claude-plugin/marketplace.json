@@ -6,12 +6,12 @@
     "name": "Ivan Magda"
   },
   "metadata": {
-    "description": "Skills for keeping Claude Code / AGENTS.md instruction files lean: a reactive guardian and a restructuring cleanup."
+    "description": "Two skills for keeping CLAUDE.md, AGENTS.md, and MEMORY.md lean: a reactive guardian and a restructuring cleanup."
   },
   "plugins": [
     {
       "name": "instruction-health",
-      "description": "Keep CLAUDE.md, AGENTS.md, and related instruction files lean and healthy. Includes a reactive guardian for pre-write checks and a three-phase cleanup for restructuring bloated files.",
+      "description": "Keep CLAUDE.md, AGENTS.md, MEMORY.md, and related instruction files lean. A reactive guardian runs pre-write checks; a three-phase cleanup restructures bloated files.",
       "repository": "https://github.com/ivan-magda/instruction-health-skills",
       "version": "1.0.0",
       "author": {
