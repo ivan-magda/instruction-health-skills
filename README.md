@@ -2,6 +2,12 @@
 
 Agent skills to keep AI assistant instruction files (AGENTS.md, CLAUDE.md, MEMORY.md) lean and healthy. Two complementary skills: a reactive **guardian** that runs before an instruction file is edited to prevent bloat, and a three-phase **cleanup** for files that have already grown too large. Designed to work with Claude, Cursor, Windsurf, Copilot, and other AI coding assistants that support the Agent Skills / AGENTS.md format.
 
+## Why These Skills Exist
+
+I built these after my team's `CLAUDE.md` hit Claude Code's 40k-character warning — 519 lines that had grown organically over three months. The cost wasn't tokens: instruction-following degrades uniformly as the file grows, so a fat instruction file makes the agent worse at *every* rule in it, not just the ones it skips. Cleaning that up by hand got our always-loaded context down 73% ([writeup](https://ivanmagda.dev/posts/fixing-40k-claude-md-warning-monorepo/)). These two skills are the codified version of that routine — one to prevent the bloat, one to fix it once it's there.
+
+The instruction file is a prompt budget, not documentation.
+
 ## Philosophy
 
 These skills focus on **facts about context-budget hygiene**, not opinions about what belongs in your instruction file.
