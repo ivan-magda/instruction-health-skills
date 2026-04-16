@@ -49,12 +49,19 @@ The two are designed to be used together: cleanup fixes the past, guardian preve
 
 ### Option A: Using skills.sh (recommended)
 
-Install each skill independently. Two commands install both:
+Run a single command and pick both skills in the wizard (space to toggle, enter to confirm):
 
 ```bash
-npx skills add https://github.com/ivan-magda/instruction-health-skills --skill instruction-cleanup
-npx skills add https://github.com/ivan-magda/instruction-health-skills --skill instruction-guardian
+npx skills add https://github.com/ivan-magda/instruction-health-skills
 ```
+
+Or install both non-interactively in one shot:
+
+```bash
+npx skills add https://github.com/ivan-magda/instruction-health-skills --skill instruction-cleanup instruction-guardian
+```
+
+For an unattended setup that also picks every agent, use `--all`.
 
 For more information, visit the per-skill platform pages:
 
