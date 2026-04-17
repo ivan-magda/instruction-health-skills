@@ -39,7 +39,7 @@ For each item, count lines and estimate characters:
 2. **@-imports** — find all `@path/to/file` references in instruction files. These expand at launch and are hidden context cost. Measure what they expand to.
 3. **MEMORY.md** — first 200 lines or 25KB load every session. Check current line count. Topic files (in the memory directory) load on demand — note their existence but don't count them as always-loaded.
 4. **`.claude/rules/` files** — rules without `paths:` frontmatter load at launch. Path-scoped rules load when matching files are opened.
-5. **Skill descriptions** — always in context (budget: ~1% of context window, fallback 8,000 chars). Each description capped at 1,536 chars.
+5. **Skill descriptions** — always in context (budget: ~1% of context window, fallback 8,000 chars). Each skill's frontmatter (name + description) is capped at 1,024 chars; aim for descriptions under ~500 chars.
 
 ### Produce the Context Budget Report
 
@@ -114,7 +114,7 @@ digraph router {
 | Destination | What goes here | Loading behavior |
 |---|---|---|
 | **Instruction file (CLAUDE.md)** | Facts the agent needs every session: build commands, critical rules, architectural decisions, key gotchas | Always loaded. Survives compaction (root only). |
-| **Skill (.claude/skills/)** | Multi-step procedures: deployment, migration, debugging workflows, testing playbooks | Description always in context (~1,536 chars). Body loads only when invoked. |
+| **Skill (.claude/skills/)** | Multi-step procedures: deployment, migration, debugging workflows, testing playbooks | Frontmatter always in context (1,024 chars max; description ~500 chars target). Body loads only when invoked. |
 | **Separate doc + reference** | Reference material: route tables, component catalogs, API docs, env var tables, schema docs, code examples | Never loaded automatically. Agent reads on demand. |
 | **Rules (.claude/rules/)** | Shared conventions scoped to file types: "when editing *.tsx, follow these patterns" | Unconditional rules load at launch. Path-scoped rules load on file match. |
 | **Auto memory** | Personal learned patterns, workflow preferences, feedback corrections | First 200 lines of MEMORY.md load every session. Topic files load on demand. |
