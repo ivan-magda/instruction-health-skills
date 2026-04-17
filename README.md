@@ -73,6 +73,10 @@ Then use the skill in your AI agent, for example:
 
 > Use the instruction-guardian skill to check whether this new section belongs in CLAUDE.md
 
+Or, when files have already bloated:
+
+> Use the instruction-cleanup skill to audit CLAUDE.md and propose a restructuring plan
+
 ### Option B: Claude Code Plugin
 
 #### Personal Usage
