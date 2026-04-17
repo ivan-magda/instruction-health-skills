@@ -1,6 +1,6 @@
 {
   "name": "instruction-health",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Keep CLAUDE.md, AGENTS.md, MEMORY.md, and related instruction files lean. A reactive guardian runs pre-write checks; a three-phase cleanup restructures bloated files.",
   "author": {
     "name": "Ivan Magda"
