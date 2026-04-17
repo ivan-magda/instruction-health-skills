@@ -1,22 +1,57 @@
 ---
 name: instruction-guardian
-description: Use when about to add, modify, or update content in CLAUDE.md, AGENTS.md, MEMORY.md, or .claude/rules/ files — ensures new content is routed to the right destination and instruction files stay healthy
+description: Use BEFORE any Edit or Write tool call on CLAUDE.md, AGENTS.md, MEMORY.md, or any .claude/rules/ file — at ANY path depth, INCLUDING nested instances (any **/CLAUDE.md, **/AGENTS.md, or **/MEMORY.md — e.g. apps/*/CLAUDE.md, packages/*/AGENTS.md, services/*/CLAUDE.md, or any other subdirectory match). Triggers on ANY change regardless of size: 1-line tweak, flag addition, typo fix, appending to a list, or full rewrite. Also triggers on user phrases: "add this to CLAUDE.md", "document in AGENTS.md", "update the agent instructions", "remember this", "note this in the rules". MUST NOT be skipped during multi-file edit sessions.
 ---
 
 # Instruction Guardian
 
 A decision framework for maintaining healthy instruction files. Use this **before writing** to any instruction file (CLAUDE.md, AGENTS.md, MEMORY.md, `.claude/rules/`). Routes content to the right destination and prevents re-bloat.
 
+**Violating the letter of this skill is violating the spirit of it.** If you find yourself reasoning that "this specific case is different" or "the skill didn't literally anticipate my situation, so the rule doesn't apply," stop — that reasoning is the failure mode this skill exists to catch.
+
 ## When This Activates
 
-You are about to:
-- Add a section to CLAUDE.md or AGENTS.md
-- Update or append to MEMORY.md
-- Create an @-import in an instruction file
-- Add content to `.claude/rules/`
-- The user asks you to "add this to CLAUDE.md" or "remember this"
+You are about to call `Edit` or `Write` on:
+- `CLAUDE.md` or `AGENTS.md` — **at any path depth**: the root file, or any nested instance (`**/CLAUDE.md`, `**/AGENTS.md`). Common layouts include `apps/*/CLAUDE.md`, `packages/*/AGENTS.md`, `services/*/CLAUDE.md`, but the trigger applies to any subdirectory location regardless of repo structure.
+- `MEMORY.md` (append, update, or insert)
+- Any file under `.claude/rules/`
+- An `@-import` reference in any of the above
 
-**STOP.** Run the checklist below before writing anything.
+Or the user says:
+- "add this to CLAUDE.md" / "document in AGENTS.md" / "update the agent instructions"
+- "remember this" / "note this in the rules"
+
+**STOP.** Run the checklist below before writing anything — **regardless of edit size**. A 1-line tweak, flag addition, typo fix, or appended list item all trigger the same checklist as a full rewrite.
+
+### Do not skip during multi-file edit sessions
+
+Mid-sweep fix-mode is the most common failure case. When you are already 10+ tool calls into a session fixing CI / pre-commit / tests across many files, and an instruction-file edit rides along with the unrelated edits, the trigger still fires. Fix-mode does not exempt instruction files.
+
+### Rationalizations to catch in yourself
+
+| Rationalization | Reality |
+|---|---|
+| "It's just N lines / a typo / one character" | Size is not the trigger. The trigger is the file. Run the checklist. |
+| "I'm mid fix-sweep, this is just another file" | Instruction files have different health constraints than source files. Fix-mode doesn't exempt them. |
+| "The subdirectory CLAUDE.md is less important than root" | Subdirectory instruction files still load in their scope and still re-bloat over time. Run the checklist. |
+| "I already invoked the guardian earlier in this session" | Each edit is a separate routing decision. Past approval of a different edit does not transfer. |
+| "The user explicitly told me to edit this file" | User tells you *what* they want; the guardian decides *where it belongs*. Explicit instruction does not bypass routing. |
+| "The user said skip the checklist" | Acknowledge, then run it anyway — it costs seconds. If the guardian agrees the content belongs, you've lost nothing; if it doesn't, you've avoided a re-bloat commit. |
+| "I've mentally walked through this already" | Mental checklist ≠ running the skill. Future edits skip the stored reasoning. |
+| "The deploy/meeting/deadline is in N minutes" | The checklist takes seconds. Deadline pressure is exactly when skipped process steps become incidents. |
+
+### Red flags — STOP and run the checklist
+
+If any of these thoughts appear, the checklist is mandatory:
+
+- "I'll just Edit this quickly and move on."
+- "This file is small / nested / not the root one."
+- "The user already approved this."
+- "I ran the guardian earlier this session."
+- "Guardian would obviously say yes — skipping saves a step."
+- "The rule can't have meant *this* edit."
+
+All of these mean: **invoke the guardian, then edit.**
 
 ---
 
@@ -103,7 +138,8 @@ Each destination has format rules:
 
 **Skill (.claude/skills/):**
 - For procedures with 3+ steps
-- Description under 1,536 chars (just triggers, NOT the workflow)
+- Frontmatter (name + description) under 1024 chars total; aim for description under ~500 chars
+- Description is just triggers, NOT the workflow (workflow summaries create shortcuts that agents follow instead of reading the skill body)
 - Body loads only when invoked — can be detailed
 
 **Separate doc:**
