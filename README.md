@@ -75,7 +75,7 @@ Then use the skill in your AI agent, for example:
 
 Or, when files have already bloated:
 
-> Use the instruction-cleanup skill to audit CLAUDE.md and propose a restructuring plan
+> Use the instruction-cleanup skill to audit this repo's instruction files and propose a restructuring plan
 
 ### Option B: Claude Code Plugin
 
