@@ -178,6 +178,10 @@ Present this plan to the user and get approval before implementing.
 
 Execute the approved plan, then verify nothing was lost.
 
+### Composition with `instruction-guardian`
+
+Phase 3 Edits do **not** require per-file `instruction-guardian` invocation — the approved Phase-2 plan IS the guardian pass (same litmus test, same routing flowchart, with explicit user approval). Run guardian only when a Phase 3 Edit deviates from the approved plan: scope creep, newly discovered sections, ad-hoc additions, or content you decide to handle differently than the plan said.
+
 ### Implementation Order
 
 1. **Create extracted docs first** — write the files that content is moving to

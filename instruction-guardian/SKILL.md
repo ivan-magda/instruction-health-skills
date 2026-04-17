@@ -27,7 +27,23 @@ Or the user says:
 
 Mid-sweep fix-mode is the most common failure case. When you are already 10+ tool calls into a session fixing CI / pre-commit / tests across many files, and an instruction-file edit rides along with the unrelated edits, the trigger still fires. Fix-mode does not exempt instruction files.
 
+### Exception: approved `instruction-cleanup` Phase-3 plans
+
+The **one** carve-out. When you are executing Edits that implement an already-approved `instruction-cleanup` Phase-3 plan, skip the per-Edit guardian checklist. Phase 2 of `instruction-cleanup` already applies the same litmus test ("would removing this cause the agent to make mistakes?"), routes each section through an equivalent flowchart, and has been explicitly approved by the user — that IS the guardian pass, done in batch form.
+
+This exception is narrow:
+
+- The plan must be **approved by the user in the current conversation** — not merely drafted or proposed.
+- The Edit must match the plan as approved.
+- **Approval must be unambiguous and item-specific.** If the user's response is hedged, partial, or scoped to a subset ("the rest is fine, let me think about X", "looks good overall", "start with the easy ones if you want"), only the **explicitly approved items** enter the carve-out. Every non-approved item still triggers guardian. When in doubt: not approved.
+- **Any deviation triggers guardian normally** — scope creep, new sections the plan didn't cover, ad-hoc additions discovered mid-implementation, or content you decide to keep/move differently than the plan said.
+- "I'm doing cleanup-ish work" is NOT the exception. The exception requires an explicit Phase-2 plan on record in this conversation.
+
+For anything else — routine edits, multi-file fix sweeps, typo fixes, single-line tweaks — the full checklist still runs.
+
 ### Rationalizations to catch in yourself
+
+*Applies to routine/ad-hoc edits. If you are inside an approved Phase-3 plan (see the Exception above), the carve-out controls — these rows describe bypasses for edits that are NOT part of such a plan.*
 
 | Rationalization | Reality |
 |---|---|
@@ -42,12 +58,12 @@ Mid-sweep fix-mode is the most common failure case. When you are already 10+ too
 
 ### Red flags — STOP and run the checklist
 
-If any of these thoughts appear, the checklist is mandatory:
+If any of these thoughts appear **during a routine edit** (i.e. not executing an approved Phase-3 plan — see Exception above), the checklist is mandatory:
 
 - "I'll just Edit this quickly and move on."
 - "This file is small / nested / not the root one."
-- "The user already approved this."
-- "I ran the guardian earlier this session."
+- "The user already approved this." (and no Phase-3 plan exists — if one does, the Exception controls)
+- "I ran the guardian earlier this session." (on a different edit — Phase-2 approval is the only carry-over)
 - "Guardian would obviously say yes — skipping saves a step."
 - "The rule can't have meant *this* edit."
 
