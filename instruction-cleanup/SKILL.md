@@ -180,7 +180,20 @@ Execute the approved plan, then verify nothing was lost.
 
 ### Composition with `instruction-guardian`
 
-Phase 3 Edits do **not** require per-file `instruction-guardian` invocation — the approved Phase-2 plan IS the guardian pass (same litmus test, same routing flowchart, with explicit user approval). Run guardian only when a Phase 3 Edit deviates from the approved plan: scope creep, newly discovered sections, ad-hoc additions, or content you decide to handle differently than the plan said.
+Phase 3 Edits do **not** require per-file `instruction-guardian` invocation — the approved Phase-2 plan IS the guardian pass (same litmus test, same routing flowchart, with explicit user approval). The plugin mechanizes this carve-out via a per-project flag file in the system tmpdir: when the flag is present, the guardian's `PreToolUse` hook suppresses its reminder for matching Edits. Phase 3 owns the flag's lifecycle (create on approval, remove on completion). The flag never lives inside the consumer's repo, so `.gitignore` is not involved.
+
+Run guardian only when a Phase 3 Edit deviates from the approved plan — scope creep, newly discovered sections, ad-hoc additions, or content you decide to handle differently. A deviating Edit should disarm the flag (see "Final step" below) before running, or accept that the hook will not fire for it.
+
+### Step 0 — Arm the carve-out (immediately after Phase-2 approval)
+
+Before any Edits, create the flag so the guardian hook stays silent for the rest of Phase 3:
+
+```sh
+flag="${TMPDIR:-/tmp}/instruction-health-cleanup-$(printf '%s' "${CLAUDE_PROJECT_DIR:-$PWD}" | cksum | awk '{print $1}').flag"
+touch "$flag"
+```
+
+The flag lives in the system tmpdir, keyed by a `cksum` of `CLAUDE_PROJECT_DIR` so it scopes per-project and never enters the repo.
 
 ### Implementation Order
 
@@ -206,6 +219,17 @@ grep "getSession" CLAUDE.md
 
 If a key term is unreachable (not in any instruction file, doc, skill, or code), something was lost. Fix it before committing.
 
+### Final step — Disarm the carve-out
+
+Once the verification grep is clean, remove the flag so guardian reminders re-enable for any subsequent edits:
+
+```sh
+flag="${TMPDIR:-/tmp}/instruction-health-cleanup-$(printf '%s' "${CLAUDE_PROJECT_DIR:-$PWD}" | cksum | awk '{print $1}').flag"
+rm -f "$flag"
+```
+
+Skip-or-forget this step and the next session would silently bypass the guardian for instruction-file edits in this project — `SessionStart` cleans up stale flags as a safety net (and the OS clears `$TMPDIR` on reboot), but Phase 3 should not rely on either.
+
 ### Target Metrics
 
 | Metric | Target |
@@ -218,32 +242,9 @@ If a key term is unreachable (not in any instruction file, doc, skill, or code),
 
 ---
 
-## Quick Reference: Content Types
-
-| Content type | Belongs in instruction file? | Why / where instead |
-|---|---|---|
-| Build/test commands | Yes (condensed) | Agent can't guess non-standard commands |
-| Critical gotchas | Yes (one line each) | Prevents specific mistakes |
-| Architectural decisions | Yes (brief "X not Y because Z") | Prevents agent from suggesting rejected alternatives |
-| Key conventions | Yes (condensed) | Coding standards that differ from defaults |
-| Full route/component tables | No | Extract to doc — agent reads code directly |
-| Env var tables | No | Use `.env.example` with comments |
-| Code pattern examples | No | Extract to doc — agent reads actual source |
-| Database schema docs | No | Agent reads schema files directly |
-| API endpoint docs | No | Agent reads route files directly |
-| Deployment walkthroughs | No | Move to skill (it's a procedure) |
-| Testing playbooks | No | Move to skill (beyond basic test command) |
-| Version numbers | No | Agent reads package.json / lockfiles |
-| File-by-file descriptions | No | Agent uses file tools to explore |
-| Standard language conventions | No | Agent already knows these |
-
 ## Common Mistakes
 
 1. **Skipping the audit** — Restructuring without measuring leads to "feels smaller" but no actual context reduction. Measure first.
-2. **Using @-imports for extracted content** — Defeats the entire purpose. Use pitch-style plain references.
-3. **Leaving all pitfalls in docs** — Critical gotchas (ones that cause CI failures or data loss) MUST stay inline. Only extract the less severe ones.
-4. **Not considering skills** — Deployment procedures, testing workflows, and debugging playbooks are verbs, not nouns. They belong in skills, not docs.
-5. **Forgetting compaction** — Critical rules in subdirectory files get lost after `/compact`. Put them in root.
-6. **Not verifying** — The needle grep catches content that was extracted but never referenced. Always verify.
-7. **One-shot restructuring** — This should be a conversation: audit -> present -> plan -> approve -> implement -> verify. Not a single commit.
-8. **Planning without a verification list** — The plan itself must include which terms you'll grep for post-restructuring. If the plan doesn't mention verification, the implementation won't do it either.
+2. **Leaving all pitfalls in docs** — Critical gotchas (ones that cause CI failures or data loss) MUST stay inline. Only extract the less severe ones.
+3. **Not considering skills** — Deployment procedures, testing workflows, and debugging playbooks are verbs, not nouns. They belong in skills, not docs.
+4. **One-shot restructuring** — This should be a conversation: audit -> present -> plan -> approve -> implement -> verify. Not a single commit.

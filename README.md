@@ -95,6 +95,8 @@ Install the plugin:
 /plugin install instruction-health@instruction-health-skills
 ```
 
+The plugin ships a `PreToolUse` hook that reminds the agent to invoke `instruction-guardian` before any `Edit` or `Write` against an instruction file (CLAUDE.md / AGENTS.md / MEMORY.md / `.claude/rules/` / memory topic files), and a `SessionStart` hook that clears any leftover `instruction-cleanup` carve-out flag. No extra configuration is needed — both activate automatically when the plugin is installed.
+
 #### Project Configuration
 
 To automatically provide both skills to everyone working in a repository, configure the repository's `.claude/settings.json`:

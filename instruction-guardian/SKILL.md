@@ -1,11 +1,11 @@
 ---
 name: instruction-guardian
-description: Use BEFORE any Edit or Write tool call on CLAUDE.md, AGENTS.md, MEMORY.md, or any .claude/rules/ file — at ANY path depth, INCLUDING nested instances (any **/CLAUDE.md, **/AGENTS.md, or **/MEMORY.md — e.g. apps/*/CLAUDE.md, packages/*/AGENTS.md, services/*/CLAUDE.md, or any other subdirectory match). Triggers on ANY change regardless of size: 1-line tweak, flag addition, typo fix, appending to a list, or full rewrite. Also triggers on user phrases: "add this to CLAUDE.md", "document in AGENTS.md", "update the agent instructions", "remember this", "note this in the rules". MUST NOT be skipped during multi-file edit sessions.
+description: Use before editing CLAUDE.md, AGENTS.md, MEMORY.md, memory topic files, or any file under `.claude/rules/` — at any path depth, including nested subdirectory instances. Also when the user says "add this to CLAUDE.md", "remember this", "note this in the rules", or similar. Triggers on any change regardless of size and must not be skipped during multi-file edit sessions.
 ---
 
 # Instruction Guardian
 
-A decision framework for maintaining healthy instruction files. Use this **before writing** to any instruction file (CLAUDE.md, AGENTS.md, MEMORY.md, `.claude/rules/`). Routes content to the right destination and prevents re-bloat.
+A decision framework for routing content into the right destination and preventing re-bloat of instruction files.
 
 **Violating the letter of this skill is violating the spirit of it.** If you find yourself reasoning that "this specific case is different" or "the skill didn't literally anticipate my situation, so the rule doesn't apply," stop — that reasoning is the failure mode this skill exists to catch.
 
@@ -14,6 +14,7 @@ A decision framework for maintaining healthy instruction files. Use this **befor
 You are about to call `Edit` or `Write` on:
 - `CLAUDE.md` or `AGENTS.md` — **at any path depth**: the root file, or any nested instance (`**/CLAUDE.md`, `**/AGENTS.md`). Common layouts include `apps/*/CLAUDE.md`, `packages/*/AGENTS.md`, `services/*/CLAUDE.md`, but the trigger applies to any subdirectory location regardless of repo structure.
 - `MEMORY.md` (append, update, or insert)
+- Memory topic files under `.claude/**/memory/` (e.g. `~/.claude/projects/<project-id>/memory/feedback_*.md`, `project_*.md`, `reference_*.md`, `user_*.md`). These store the detailed content that `MEMORY.md` indexes — they are part of the auto-memory surface area and route by the same rules.
 - Any file under `.claude/rules/`
 - An `@-import` reference in any of the above
 
@@ -23,20 +24,20 @@ Or the user says:
 
 **STOP.** Run the checklist below before writing anything — **regardless of edit size**. A 1-line tweak, flag addition, typo fix, or appended list item all trigger the same checklist as a full rewrite.
 
-### Do not skip during multi-file edit sessions
-
-Mid-sweep fix-mode is the most common failure case. When you are already 10+ tool calls into a session fixing CI / pre-commit / tests across many files, and an instruction-file edit rides along with the unrelated edits, the trigger still fires. Fix-mode does not exempt instruction files.
-
 ### Exception: approved `instruction-cleanup` Phase-3 plans
 
 The **one** carve-out. When you are executing Edits that implement an already-approved `instruction-cleanup` Phase-3 plan, skip the per-Edit guardian checklist. Phase 2 of `instruction-cleanup` already applies the same litmus test ("would removing this cause the agent to make mistakes?"), routes each section through an equivalent flowchart, and has been explicitly approved by the user — that IS the guardian pass, done in batch form.
+
+**The carve-out is mechanized by a flag file.** When `instruction-cleanup` Phase-3 begins, it creates a per-project flag in the system tmpdir; the `PreToolUse` hook checks for this flag and suppresses the reminder; Phase-3's last step removes the flag. The flag is intentionally outside the repo, so neither `.gitignore` nor commits ever need to mention it. In normal Phase-3 flow the carve-out happens automatically — you do not need to reason about it.
+
+The bullets below are a **safety net** for cases the flag does not cover: hook disabled, flag missing because the cleanup skill was bypassed, an unusual conversation state, or a deviation discovered mid-implementation. In all of those, your judgment falls back to this checklist.
 
 This exception is narrow:
 
 - The plan must be **approved by the user in the current conversation** — not merely drafted or proposed.
 - The Edit must match the plan as approved.
 - **Approval must be unambiguous and item-specific.** If the user's response is hedged, partial, or scoped to a subset ("the rest is fine, let me think about X", "looks good overall", "start with the easy ones if you want"), only the **explicitly approved items** enter the carve-out. Every non-approved item still triggers guardian. When in doubt: not approved.
-- **Any deviation triggers guardian normally** — scope creep, new sections the plan didn't cover, ad-hoc additions discovered mid-implementation, or content you decide to keep/move differently than the plan said.
+- **Any deviation triggers guardian normally** — scope creep, new sections the plan didn't cover, ad-hoc additions discovered mid-implementation, or content you decide to keep/move differently than the plan said. A deviating Edit should disarm the flag first (run the disarm snippet from `instruction-cleanup`'s "Final step"), or accept that the hook will not fire for it.
 - "I'm doing cleanup-ish work" is NOT the exception. The exception requires an explicit Phase-2 plan on record in this conversation.
 
 For anything else — routine edits, multi-file fix sweeps, typo fixes, single-line tweaks — the full checklist still runs.
@@ -55,19 +56,8 @@ For anything else — routine edits, multi-file fix sweeps, typo fixes, single-l
 | "The user said skip the checklist" | Acknowledge, then run it anyway — it costs seconds. If the guardian agrees the content belongs, you've lost nothing; if it doesn't, you've avoided a re-bloat commit. |
 | "I've mentally walked through this already" | Mental checklist ≠ running the skill. Future edits skip the stored reasoning. |
 | "The deploy/meeting/deadline is in N minutes" | The checklist takes seconds. Deadline pressure is exactly when skipped process steps become incidents. |
-
-### Red flags — STOP and run the checklist
-
-If any of these thoughts appear **during a routine edit** (i.e. not executing an approved Phase-3 plan — see Exception above), the checklist is mandatory:
-
-- "I'll just Edit this quickly and move on."
-- "This file is small / nested / not the root one."
-- "The user already approved this." (and no Phase-3 plan exists — if one does, the Exception controls)
-- "I ran the guardian earlier this session." (on a different edit — Phase-2 approval is the only carry-over)
-- "Guardian would obviously say yes — skipping saves a step."
-- "The rule can't have meant *this* edit."
-
-All of these mean: **invoke the guardian, then edit.**
+| "Guardian would obviously say yes — skipping saves a step" | Predicting the answer ≠ running the checklist. Predictions are wrong often enough that the seconds saved are not worth the routing miss. |
+| "The rule can't have meant *this* edit" | The rule meant every edit. Constructing the exception IS the failure mode the spirit-vs-letter clause exists to catch. |
 
 ---
 
@@ -258,41 +248,3 @@ When you see these patterns being added to an instruction file, intervene:
 | Full configuration example | Reference material | Separate doc or inline in config |
 | "For more details, see @large-file.md" | @-import expands at launch | Use pitch-style plain reference |
 | Content duplicating what's in code | Agent can read the code | Delete |
-
----
-
-## Quick Decision Reference
-
-**Add to instruction file (condensed):**
-- Build/test commands the agent can't guess
-- Critical gotchas (one line each)
-- Architecture decisions ("X not Y because Z")
-- Conventions that differ from defaults
-
-**Route to skill:**
-- Deployment procedures
-- Testing workflows (beyond the basic command)
-- Migration procedures
-- Any multi-step process
-
-**Route to separate doc:**
-- API documentation
-- Route tables
-- Component catalogs
-- Code pattern examples
-- Database schema descriptions
-
-**Route to rules:**
-- File-type-scoped conventions ("when editing *.tsx, use X")
-- Shared team standards that apply conditionally
-
-**Route to memory:**
-- Personal workflow preferences
-- Learned debugging patterns
-- Feedback corrections from the user
-
-**Delete / don't persist:**
-- Standard language conventions
-- Content the agent derives from code
-- Version numbers and temporal data
-- Self-evident practices

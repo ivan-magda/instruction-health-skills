@@ -1,0 +1,20 @@
+{
+  "description": "Guardian reminder + cleanup-flag lifecycle for instruction-health",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "sh ${CLAUDE_PLUGIN_ROOT}/hooks/guardian-reminder.sh" }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "sh ${CLAUDE_PLUGIN_ROOT}/hooks/clear-cleanup-flag.sh" }
+        ]
+      }
+    ]
+  }
+}
