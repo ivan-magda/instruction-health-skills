@@ -1,56 +1,56 @@
 # Instruction Health Skills
 
-Agent skills to keep AI assistant instruction files (AGENTS.md, CLAUDE.md, MEMORY.md) lean. Two complementary skills: a reactive **guardian** that runs before an instruction file is edited to prevent bloat, and a three-phase **cleanup** for files that have already grown too large. Designed to work with Claude, Cursor, Windsurf, Copilot, Codex, and other AI coding assistants that support the Agent Skills / AGENTS.md format.
+> Agent skills that keep AI assistant instruction files (AGENTS.md, CLAUDE.md, MEMORY.md) lean.
 
-## Why These Skills Exist
+Two skills work together: a **guardian** that runs before an instruction file is edited to prevent bloat, and a three-phase **cleanup** for files that have already grown too large. They work with Claude, Cursor, Windsurf, Copilot, Codex, and other AI coding assistants that support the Agent Skills / AGENTS.md format.
 
-I built these after my team's `CLAUDE.md` hit Claude Code's 40k-character warning — 519 lines that had grown organically over three months. The cost wasn't tokens: instruction-following degrades uniformly as the file grows, so a fat instruction file makes the agent worse at *every* rule in it, not just the ones it skips. Cleaning that up by hand got our always-loaded context down 73% ([writeup](https://ivanmagda.dev/posts/fixing-40k-claude-md-warning-monorepo/)). These two skills are the codified version of that routine — one to prevent the bloat, one to fix it once it's there.
+## Table of Contents
 
-The instruction file is a prompt budget, not documentation.
+- [Background](#background)
+- [Philosophy](#philosophy)
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Project Structure](#project-structure)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Background
+
+My team's `CLAUDE.md` hit Claude Code's 40k-character warning at 519 lines, grown over three months. The cost wasn't token count. Instruction-following degrades as the file grows, so a bloated instruction file makes the agent worse at every rule it holds, not only the ones it skips. I cleaned ours up by hand and cut always-loaded context by 73% ([writeup](https://ivanmagda.dev/posts/fixing-40k-claude-md-warning-monorepo/)). These two skills codify that routine: one prevents the bloat, one fixes it once it lands.
+
+Treat the instruction file as a prompt budget. Spend it on rules the agent needs in front of it every turn.
 
 ## Philosophy
 
-These skills focus on **facts about context-budget hygiene**, not opinions about what belongs in your instruction file.
+These skills handle context-budget hygiene as a set of facts, leaving opinions about what belongs in your instruction file to you.
 
 **Covered:**
 
-- Routing — every piece of content has exactly one correct destination (instruction file, skill, rule, doc, memory, or delete)
-- Context budget — measuring, condensing, and preventing re-bloat of always-loaded context
-- Compaction survival — which content survives `/compact` and which silently disappears
+- Routing: every piece of content has one correct destination (instruction file, skill, rule, doc, memory, or delete).
+- Context budget: measuring, condensing, and preventing re-bloat of always-loaded context.
+- Compaction survival: which content survives `/compact` and which disappears.
 
 **Intentionally excluded:**
 
-- No team workflow opinions — no mandate on what goes in CLAUDE.md vs AGENTS.md vs team docs
-- No naming conventions — no rules about skill names, doc paths, or file structure
-- No prescriptive style — the litmus test ("would removing this cause mistakes?") drives every call
+- Team workflow opinions. No mandate on what goes in CLAUDE.md vs AGENTS.md vs team docs.
+- Naming conventions. No rules about skill names, doc paths, or file structure.
+- Prescriptive style. The litmus test ("would removing this cause mistakes?") drives every call.
 
-## Structure
+## Features
 
-```
-instruction-health-skills/
-├── .claude-plugin/
-│   ├── plugin.json                      # Claude Code plugin manifest
-│   └── marketplace.json                 # Claude Code marketplace catalog
-├── instruction-cleanup/
-│   └── SKILL.md                         # Three-phase restructuring procedure
-└── instruction-guardian/
-    └── SKILL.md                         # Six-step pre-write checklist
-```
-
-## Coverage
-
-| Skill | When to use it | What it does |
-| ----- | -------------- | ------------ |
-| `instruction-guardian` | Day-to-day gate — runs before *every* edit to CLAUDE.md / AGENTS.md / MEMORY.md / `.claude/rules/`, keeping files from re-bloating. | Runs a six-step checklist: line budget, dedup check, litmus test, destination routing, format rules, `@`-import prevention. Politely pushes back when content doesn't belong in an instruction file. |
-| `instruction-cleanup` | One-time fix — run when files have already grown past ~200 lines or ~40k chars and agent performance has degraded. Produces a written plan you approve before anything is rewritten. | Three-phase audit → plan → implement procedure. Measures the full context-budget surface area, classifies every section, restructures with a needle-grep verification step. |
+| Skill                  | When to use it                                                                                                                                                              | What it does                                                                                                                                                                                |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `instruction-guardian` | Day-to-day gate. Runs before every edit to CLAUDE.md / AGENTS.md / MEMORY.md / `.claude/rules/`, keeping files from re-bloating.                                            | Runs a six-step checklist: line budget, dedup check, litmus test, destination routing, format rules, `@`-import prevention. Pushes back when content doesn't belong in an instruction file. |
+| `instruction-cleanup`  | One-time fix. Run when files have grown past ~200 lines or ~40k chars and agent performance has degraded. Produces a written plan you approve before anything is rewritten. | Three-phase audit, plan, and implement procedure. Measures the full context-budget surface area, classifies every section, and restructures with a needle-grep verification step.           |
 
 Cleanup fixes the past, guardian prevents the future.
 
-## How to Use These Skills
+## Installation
 
-### Option A: Using skills.sh (recommended)
+### Option A: skills.sh (recommended)
 
-Run a single command and pick both skills in the wizard (space to toggle, enter to confirm):
+Run one command and pick both skills in the wizard (space to toggle, enter to confirm):
 
 ```bash
 npx skills add https://github.com/ivan-magda/instruction-health-skills
@@ -64,24 +64,14 @@ npx skills add https://github.com/ivan-magda/instruction-health-skills --skill i
 
 For an unattended setup that also picks every agent, use `--all`.
 
-For more information, visit the per-skill platform pages:
+Per-skill platform pages:
 
 - [instruction-cleanup](https://skills.sh/ivan-magda/instruction-health-skills/instruction-cleanup)
 - [instruction-guardian](https://skills.sh/ivan-magda/instruction-health-skills/instruction-guardian)
 
-Then use the skill in your AI agent, for example:
+### Option B: Claude Code plugin
 
-> Use the instruction-guardian skill to check whether this new section belongs in CLAUDE.md
-
-Or, when files have already bloated:
-
-> Use the instruction-cleanup skill to audit this repo's instruction files and propose a restructuring plan
-
-### Option B: Claude Code Plugin
-
-#### Personal Usage
-
-Both skills are bundled into a single plugin — one marketplace add, one install, and you get both.
+Both skills ship in a single plugin: one marketplace add, one install, and you get both.
 
 Add the marketplace:
 
@@ -95,11 +85,9 @@ Install the plugin:
 /plugin install instruction-health@instruction-health-skills
 ```
 
-The plugin ships a `PreToolUse` hook that reminds the agent to invoke `instruction-guardian` before any `Edit` or `Write` against an instruction file (CLAUDE.md / AGENTS.md / MEMORY.md / `.claude/rules/` / memory topic files), and a `SessionStart` hook that clears any leftover `instruction-cleanup` carve-out flag. No extra configuration is needed — both activate automatically when the plugin is installed.
+The plugin ships a `PreToolUse` hook that reminds the agent to invoke `instruction-guardian` before any `Edit` or `Write` against an instruction file (CLAUDE.md / AGENTS.md / MEMORY.md / `.claude/rules/` / memory topic files), and a `SessionStart` hook that clears any leftover `instruction-cleanup` carve-out flag. Both activate when the plugin is installed, with no extra configuration.
 
-#### Project Configuration
-
-To automatically provide both skills to everyone working in a repository, configure the repository's `.claude/settings.json`:
+To provide both skills to everyone working in a repository, configure the repository's `.claude/settings.json`:
 
 ```json
 {
@@ -117,7 +105,7 @@ To automatically provide both skills to everyone working in a repository, config
 }
 ```
 
-When team members open the project, Claude Code will prompt them to install the plugin.
+When team members open the project, Claude Code prompts them to install the plugin.
 
 ### Option C: Manual install
 
@@ -131,17 +119,40 @@ When team members open the project, Claude Code will prompt them to install the 
 
 3. **Use your AI tool** as usual and ask it to use either skill when touching instruction files.
 
-#### Where to Save Skills
-
-Follow your tool's official documentation, here are a few popular ones:
+For where to save skills, follow your tool's documentation:
 
 - **Codex:** [Where to save skills](https://developers.openai.com/codex/skills/#where-to-save-skills)
 - **Claude:** [Using Skills](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview#using-skills)
 - **Cursor:** [Enabling Skills](https://cursor.com/docs/context/skills#enabling-skills)
 
-**How to verify:**
+## Usage
 
-Your agent should reference the checklist/workflow in the relevant `SKILL.md` on instruction-file edits — the guardian before a write, the cleanup when files are already bloated.
+Ask your agent to run the guardian before adding to an instruction file:
+
+> Use the instruction-guardian skill to check whether this new section belongs in CLAUDE.md
+
+Run the cleanup once files have already bloated:
+
+> Use the instruction-cleanup skill to audit this repo's instruction files and propose a restructuring plan
+
+To confirm a skill is active, watch for your agent referencing the checklist or workflow in the relevant `SKILL.md` on instruction-file edits: the guardian before a write, the cleanup when files are already bloated.
+
+## Project Structure
+
+```
+instruction-health-skills/
+├── .claude-plugin/
+│   ├── plugin.json                      # Claude Code plugin manifest
+│   └── marketplace.json                 # Claude Code marketplace catalog
+├── instruction-cleanup/
+│   └── SKILL.md                         # Three-phase restructuring procedure
+└── instruction-guardian/
+    └── SKILL.md                         # Six-step pre-write checklist
+```
+
+## Contributing
+
+Issues and pull requests are welcome. Open an issue to discuss a change before sending a larger pull request.
 
 ## License
 
