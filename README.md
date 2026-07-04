@@ -144,10 +144,16 @@ instruction-health-skills/
 ├── .claude-plugin/
 │   ├── plugin.json                      # Claude Code plugin manifest
 │   └── marketplace.json                 # Claude Code marketplace catalog
+├── hooks/
+│   ├── hooks.json                       # PreToolUse + SessionStart hook wiring
+│   ├── guardian-reminder.sh             # Reminds the agent to invoke instruction-guardian pre-edit
+│   └── clear-cleanup-flag.sh            # Clears a stale cleanup carve-out flag at session start
 ├── instruction-cleanup/
 │   └── SKILL.md                         # Three-phase restructuring procedure
-└── instruction-guardian/
-    └── SKILL.md                         # Six-step pre-write checklist
+├── instruction-guardian/
+│   └── SKILL.md                         # Six-step pre-write checklist
+└── tests/
+    └── hook-unit-tests.sh               # Unit tests for both hook scripts
 ```
 
 ## Contributing

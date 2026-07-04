@@ -1,6 +1,6 @@
 ---
 name: instruction-guardian
-description: Use before editing CLAUDE.md, AGENTS.md, MEMORY.md, memory topic files, or any file under `.claude/rules/` — at any path depth, including nested subdirectory instances. Also when the user says "add this to CLAUDE.md", "remember this", "note this in the rules", or similar. Triggers on any change regardless of size and must not be skipped during multi-file edit sessions.
+description: Routing gate for instruction-file edits that decides where new content belongs and pushes back on bloat. Use before ANY edit, of any size, even mid multi-file sweeps, to CLAUDE.md, AGENTS.md, MEMORY.md, memory topic files, or any file under `.claude/rules/`, at any path depth including nested instances. Also when the user says "add this to CLAUDE.md", "remember this", "note this in the rules", or similar. For bulk restructuring of an oversized file, use instruction-cleanup instead.
 ---
 
 # Instruction Guardian
@@ -11,7 +11,7 @@ A decision framework for routing content into the right destination and preventi
 
 ## When This Activates
 
-You are about to call `Edit` or `Write` on:
+You are about to modify — via `Edit`, `Write`, or any Bash command that writes to the file (`echo >>`, `sed -i`, `tee -a`, heredocs) — any of:
 - `CLAUDE.md` or `AGENTS.md` — **at any path depth**: the root file, or any nested instance (`**/CLAUDE.md`, `**/AGENTS.md`). Common layouts include `apps/*/CLAUDE.md`, `packages/*/AGENTS.md`, `services/*/CLAUDE.md`, but the trigger applies to any subdirectory location regardless of repo structure.
 - `MEMORY.md` (append, update, or insert)
 - Memory topic files under `.claude/**/memory/` (e.g. `~/.claude/projects/<project-id>/memory/feedback_*.md`, `project_*.md`, `reference_*.md`, `user_*.md`). These store the detailed content that `MEMORY.md` indexes — they are part of the auto-memory surface area and route by the same rules.
@@ -23,6 +23,8 @@ Or the user says:
 - "remember this" / "note this in the rules"
 
 **STOP.** Run the checklist below before writing anything — **regardless of edit size**. A 1-line tweak, flag addition, typo fix, or appended list item all trigger the same checklist as a full rewrite.
+
+**The trigger is the file, not the tool.** The plugin's `PreToolUse` hook only watches `Edit` and `Write` — for shell-based writes the hook cannot remind you, which makes this skill the only gate. That is a reason to be *more* careful with Bash writes, not less.
 
 ### Exception: approved `instruction-cleanup` Phase-3 plans
 
@@ -37,7 +39,7 @@ This exception is narrow:
 - The plan must be **approved by the user in the current conversation** — not merely drafted or proposed.
 - The Edit must match the plan as approved.
 - **Approval must be unambiguous and item-specific.** If the user's response is hedged, partial, or scoped to a subset ("the rest is fine, let me think about X", "looks good overall", "start with the easy ones if you want"), only the **explicitly approved items** enter the carve-out. Every non-approved item still triggers guardian. When in doubt: not approved.
-- **Any deviation triggers guardian normally** — scope creep, new sections the plan didn't cover, ad-hoc additions discovered mid-implementation, or content you decide to keep/move differently than the plan said. A deviating Edit should disarm the flag first (run the disarm snippet from `instruction-cleanup`'s "Final step"), or accept that the hook will not fire for it.
+- **Any deviation triggers guardian normally** — scope creep, new sections the plan didn't cover, ad-hoc additions discovered mid-implementation, or content you decide to keep/move differently than the plan said. A deviating Edit should disarm the flag first (run the disarm snippet from `instruction-cleanup`'s "Final step"), or accept that the hook will not fire for it. After the deviation is resolved, re-arm the flag (re-run Step 0 of `instruction-cleanup`) before resuming the approved plan — its carve-out still applies to the remaining approved Edits.
 - "I'm doing cleanup-ish work" is NOT the exception. The exception requires an explicit Phase-2 plan on record in this conversation.
 
 For anything else — routine edits, multi-file fix sweeps, typo fixes, single-line tweaks — the full checklist still runs.
@@ -54,6 +56,7 @@ For anything else — routine edits, multi-file fix sweeps, typo fixes, single-l
 | "I already invoked the guardian earlier in this session" | Each edit is a separate routing decision. Past approval of a different edit does not transfer. |
 | "The user explicitly told me to edit this file" | User tells you *what* they want; the guardian decides *where it belongs*. Explicit instruction does not bypass routing. |
 | "The user said skip the checklist" | Acknowledge, then run it anyway — it costs seconds. If the guardian agrees the content belongs, you've lost nothing; if it doesn't, you've avoided a re-bloat commit. |
+| "I'm using Bash, not Edit, so the guardian doesn't apply" | The trigger is the file, not the tool. A shell append rewrites the same instruction file — and the hook can't see it, so the checklist is the only safeguard. Run it. |
 | "I've mentally walked through this already" | Mental checklist ≠ running the skill. Future edits skip the stored reasoning. |
 | "The deploy/meeting/deadline is in N minutes" | The checklist takes seconds. Deadline pressure is exactly when skipped process steps become incidents. |
 | "Guardian would obviously say yes — skipping saves a step" | Predicting the answer ≠ running the checklist. Predictions are wrong often enough that the seconds saved are not worth the routing miss. |
@@ -108,6 +111,7 @@ digraph guardian {
   "Multi-step procedure?" [shape=diamond];
   "Reference material?" [shape=diamond];
   "Shared convention?" [shape=diamond];
+  "Personal learned pattern?" [shape=diamond];
 
   "Instruction file\n(1-3 lines max)" [shape=box, style=bold];
   "Skill" [shape=box];
@@ -126,7 +130,9 @@ digraph guardian {
   "Reference material?" -> "Separate doc" [label="yes"];
   "Reference material?" -> "Shared convention?" [label="no"];
   "Shared convention?" -> "Rules file" [label="yes"];
-  "Shared convention?" -> "Auto memory" [label="maybe"];
+  "Shared convention?" -> "Personal learned pattern?" [label="no"];
+  "Personal learned pattern?" -> "Auto memory" [label="yes"];
+  "Personal learned pattern?" -> "Do not persist" [label="no"];
 }
 ```
 
@@ -144,8 +150,8 @@ Each destination has format rules:
 
 **Skill (.claude/skills/):**
 - For procedures with 3+ steps
-- Frontmatter (name + description) under 1024 chars total; aim for description under ~500 chars
-- Description is just triggers, NOT the workflow (workflow summaries create shortcuts that agents follow instead of reading the skill body)
+- Frontmatter limits: name 64 chars max, description 1,024 chars max; aim for descriptions under ~500 chars
+- Description states what the skill does AND when to use it (third person, concrete triggers) — NEVER a summary of the workflow steps (workflow summaries create shortcuts that agents follow instead of reading the skill body)
 - Body loads only when invoked — can be detailed
 
 **Separate doc:**

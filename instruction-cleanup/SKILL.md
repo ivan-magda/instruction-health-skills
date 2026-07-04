@@ -1,6 +1,6 @@
 ---
 name: instruction-cleanup
-description: Use when CLAUDE.md, AGENTS.md, or instruction files have grown too large (200+ lines, 40k+ chars), when agent performance has degraded due to bloated context, or when the user asks to restructure or clean up their instruction files
+description: Restructures bloated instruction files in bulk to shrink always-loaded context and restore agent performance. Use when CLAUDE.md, AGENTS.md, Cursor rules, or other instruction files have grown too large (200+ lines, 40k+ chars), when agent performance has degraded due to bloated context, or when the user asks to audit, restructure, slim down, or clean up their instruction files. For a single small edit to an instruction file, use instruction-guardian instead.
 ---
 
 # Instruction File Cleanup
@@ -13,15 +13,9 @@ Instruction files are a **prompt budget**, not documentation. Every line loads i
 
 ## The Three Phases
 
-```dot
-digraph cleanup {
-  rankdir=LR;
-  "AUDIT" -> "PLAN" -> "IMPLEMENT";
-  "AUDIT" [shape=box, label="AUDIT\nMeasure everything"];
-  "PLAN" [shape=box, label="PLAN\nClassify every section"];
-  "IMPLEMENT" [shape=box, label="IMPLEMENT\nRestructure + verify"];
-}
-```
+1. **AUDIT** — measure everything
+2. **PLAN** — classify every section
+3. **IMPLEMENT** — restructure + verify
 
 Work through each phase completely before moving to the next. Do NOT jump to restructuring without measuring first.
 
@@ -39,7 +33,7 @@ For each item, count lines and estimate characters:
 2. **@-imports** — find all `@path/to/file` references in instruction files. These expand at launch and are hidden context cost. Measure what they expand to.
 3. **MEMORY.md** — first 200 lines or 25KB load every session. Check current line count. Topic files (in the memory directory) load on demand — note their existence but don't count them as always-loaded.
 4. **`.claude/rules/` files** — rules without `paths:` frontmatter load at launch. Path-scoped rules load when matching files are opened.
-5. **Skill descriptions** — always in context (budget: ~1% of context window, fallback 8,000 chars). Each skill's frontmatter (name + description) is capped at 1,024 chars; aim for descriptions under ~500 chars.
+5. **Skill descriptions** — every installed skill's frontmatter (name + description) is always in context; bodies load only when invoked. Hard caps: name 64 chars, description 1,024 chars; aim for descriptions under ~500 chars.
 
 ### Produce the Context Budget Report
 
@@ -53,11 +47,14 @@ For each item, count lines and estimate characters:
 | @-import: README | @README.md | ??? | ??? | Always (expands at launch) |
 | MEMORY.md | ~/.claude/projects/.../MEMORY.md | ??? | ??? | First 200 lines |
 | Rule: testing.md | .claude/rules/testing.md | ??? | ??? | Always (no paths: filter) |
+| Skill descriptions (N skills) | .claude/skills/ + installed plugins | — | ??? | Always (frontmatter only) |
 | ...  | ... | ... | ... | ... |
 | **TOTAL always-loaded** | | **???** | **???** | |
 
 Target: each file under 200 lines. Combined always-loaded budget: as small as possible.
 ```
+
+TOTAL sums only the always-loaded portions: rows marked Always, the first-200-lines/25KB slice of MEMORY.md, and the skill-descriptions row. List Lazy rows for completeness but exclude them from TOTAL.
 
 Present this report to the user before proceeding to Phase 2.
 
@@ -114,7 +111,7 @@ digraph router {
 | Destination | What goes here | Loading behavior |
 |---|---|---|
 | **Instruction file (CLAUDE.md)** | Facts the agent needs every session: build commands, critical rules, architectural decisions, key gotchas | Always loaded. Survives compaction (root only). |
-| **Skill (.claude/skills/)** | Multi-step procedures: deployment, migration, debugging workflows, testing playbooks | Frontmatter always in context (1,024 chars max; description ~500 chars target). Body loads only when invoked. |
+| **Skill (.claude/skills/)** | Multi-step procedures: deployment, migration, debugging workflows, testing playbooks | Frontmatter always in context (name ≤64 chars, description ≤1,024 chars; ~500 target). Body loads only when invoked. |
 | **Separate doc + reference** | Reference material: route tables, component catalogs, API docs, env var tables, schema docs, code examples | Never loaded automatically. Agent reads on demand. |
 | **Rules (.claude/rules/)** | Shared conventions scoped to file types: "when editing *.tsx, follow these patterns" | Unconditional rules load at launch. Path-scoped rules load on file match. |
 | **Auto memory** | Personal learned patterns, workflow preferences, feedback corrections | First 200 lines of MEMORY.md load every session. Topic files load on demand. |
@@ -182,18 +179,23 @@ Execute the approved plan, then verify nothing was lost.
 
 Phase 3 Edits do **not** require per-file `instruction-guardian` invocation — the approved Phase-2 plan IS the guardian pass (same litmus test, same routing flowchart, with explicit user approval). The plugin mechanizes this carve-out via a per-project flag file in the system tmpdir: when the flag is present, the guardian's `PreToolUse` hook suppresses its reminder for matching Edits. Phase 3 owns the flag's lifecycle (create on approval, remove on completion). The flag never lives inside the consumer's repo, so `.gitignore` is not involved.
 
-Run guardian only when a Phase 3 Edit deviates from the approved plan — scope creep, newly discovered sections, ad-hoc additions, or content you decide to handle differently. A deviating Edit should disarm the flag (see "Final step" below) before running, or accept that the hook will not fire for it.
+**Standalone use:** the flag matters only when the `instruction-health` Claude Code plugin's hooks are installed. With a skills-only install (skills.sh, manual copy, or a non-Claude tool) nothing reads it — Step 0 and the Final step become harmless no-ops you may skip, and the carve-out rests entirely on the Exception section in `instruction-guardian`.
+
+Run guardian only when a Phase 3 Edit deviates from the approved plan — scope creep, newly discovered sections, ad-hoc additions, or content you decide to handle differently. A deviating Edit should disarm the flag (see "Final step" below) before running, or accept that the hook will not fire for it. If you disarmed the flag and approved-plan Edits remain, re-arm it by re-running Step 0 before resuming them — the plan's carve-out still applies to those Edits.
 
 ### Step 0 — Arm the carve-out (immediately after Phase-2 approval)
 
 Before any Edits, create the flag so the guardian hook stays silent for the rest of Phase 3:
 
 ```sh
+# CLAUDE_PROJECT_DIR is set for hooks, not for your shell — the $PWD fallback
+# runs here. Execute from the project root (the directory the session was
+# launched in) so the key matches the one the hook computes.
 flag="${TMPDIR:-/tmp}/instruction-health-cleanup-$(printf '%s' "${CLAUDE_PROJECT_DIR:-$PWD}" | cksum | awk '{print $1}').flag"
 touch "$flag"
 ```
 
-The flag lives in the system tmpdir, keyed by a `cksum` of `CLAUDE_PROJECT_DIR` so it scopes per-project and never enters the repo.
+The flag lives in the system tmpdir, keyed by a `cksum` of the project root (`CLAUDE_PROJECT_DIR` inside hooks; your cwd when you run the snippet — which must therefore be the project root), so it scopes per-project and never enters the repo. Re-run this step if the session restarts mid-Phase-3 — the `SessionStart` hook clears the flag at every session start. If the guardian reminder still fires on the first Phase-3 Edit, the flag key did not match; re-run the snippet from the project root.
 
 ### Implementation Order
 
@@ -217,18 +219,28 @@ grep -r "deploy" .claude/skills/ docs/
 grep "getSession" CLAUDE.md
 ```
 
-If a key term is unreachable (not in any instruction file, doc, skill, or code), something was lost. Fix it before committing.
+**Pointer check — existence is not reachability.** For every doc extracted in the plan table, confirm an always-loaded instruction file still carries its pitch-style pointer:
+
+```bash
+# Each extracted doc must be pointed to from an always-loaded file
+grep -n "docs/routes.md" CLAUDE.md .claude/rules/*.md
+```
+
+A term found only inside an extracted doc, with no pointer from an always-loaded file, counts as lost — a fresh session has no way to discover that doc. (Extracted skills are exempt: their frontmatter descriptions are always in context.)
+
+If a key term is unreachable — not inline in an always-loaded file, and not in an extracted doc that an always-loaded file points to — something was lost. Fix it before committing.
 
 ### Final step — Disarm the carve-out
 
 Once the verification grep is clean, remove the flag so guardian reminders re-enable for any subsequent edits:
 
 ```sh
+# Run from the project root, as in Step 0, so the key matches.
 flag="${TMPDIR:-/tmp}/instruction-health-cleanup-$(printf '%s' "${CLAUDE_PROJECT_DIR:-$PWD}" | cksum | awk '{print $1}').flag"
 rm -f "$flag"
 ```
 
-Skip-or-forget this step and the next session would silently bypass the guardian for instruction-file edits in this project — `SessionStart` cleans up stale flags as a safety net (and the OS clears `$TMPDIR` on reboot), but Phase 3 should not rely on either.
+Skip-or-forget this step and the rest of the current session silently bypasses the guardian for instruction-file edits in this project. The `SessionStart` hook clears stale flags at the next session start (and the OS clears `$TMPDIR` on reboot), but if hooks are disabled the bypass persists indefinitely — always disarm explicitly.
 
 ### Target Metrics
 

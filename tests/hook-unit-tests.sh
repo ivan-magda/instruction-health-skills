@@ -7,7 +7,8 @@
 #   is the POSIX cksum of CLAUDE_PROJECT_DIR) exists, exit silently.
 #   Otherwise, if .tool_input.file_path matches one of the instruction-file
 #   globs (CLAUDE.md / AGENTS.md / MEMORY.md at any depth, anything under
-#   .claude/rules/, anything under .claude/**/memory/), emit a single
+#   .claude/rules/, anything under .claude/**/memory/ — absolute or
+#   relative paths), emit a single
 #   PreToolUse JSON object with additionalContext reminding the agent to
 #   invoke instruction-guardian. Otherwise (non-match, parse error, anything
 #   unexpected) exit 0 silently. Hook must never block edits.
@@ -114,6 +115,28 @@ assert_has_reminder "MEMORY.md fires reminder" "$out"
 out=$(run_guard '{"tool_input":{"file_path":"/x/.claude/rules/testing.md"}}')
 assert_has_reminder ".claude/rules/* fires reminder" "$out"
 
+out=$(run_guard '{"tool_input":{"file_path":".claude/rules/testing.md"}}')
+assert_has_reminder "relative .claude/rules/* fires reminder" "$out"
+
+out=$(run_guard '{"tool_input":{"file_path":".claude/projects/foo/memory/feedback_x.md"}}')
+assert_has_reminder "relative memory topic file fires reminder" "$out"
+
+out=$(run_guard '{"tool_input":{"file_path":"/x/.claude/memory/notes.md"}}')
+assert_has_reminder "direct .claude/memory/ (no intermediate dirs) fires reminder" "$out"
+
+out=$(run_guard '{"tool_input":{"file_path":"/x/My Project/.claude/rules/team rules.md"}}')
+assert_has_reminder "path with spaces fires reminder" "$out"
+
+out=$(run_guard '{"tool_input":{"file_path":"/x/CLAUDE.md","content":"see {\"file_path\": \"/x/src/app.ts\"}"}}')
+assert_has_reminder "real file_path fires despite fake escaped file_path in content" "$out"
+
+out=$(run_guard '{
+  "tool_input": {
+    "file_path": "/x/CLAUDE.md"
+  }
+}')
+assert_has_reminder "pretty-printed payload fires reminder" "$out"
+
 # ---- guardian-reminder.sh: flag absent, non-matching paths -----------------
 
 out=$(run_guard '{"tool_input":{"file_path":"/x/src/Foo.tsx"}}')
@@ -124,6 +147,12 @@ assert_empty "README.md silent (regression guard)" "$out"
 
 out=$(run_guard '{"tool_input":{"file_path":"/x/docs/CLAUDE-md-guide.md"}}')
 assert_empty "filename containing CLAUDE substring but not CLAUDE.md silent" "$out"
+
+out=$(run_guard '{"tool_input":{"file_path":"/x/.claude/rules-backup/old.md"}}')
+assert_empty ".claude/rules-backup/ near-miss silent" "$out"
+
+out=$(run_guard '{"tool_input":{"file_path":"/x/src/app.ts","content":"see {\"file_path\": \"/x/CLAUDE.md\"}"}}')
+assert_empty "escaped fake file_path inside content field silent" "$out"
 
 # ---- guardian-reminder.sh: malformed input must exit silently --------------
 
