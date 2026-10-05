@@ -26,6 +26,8 @@ Or the user says:
 
 **The trigger is the file, not the tool.** The plugin's `PreToolUse` hook only watches `Edit` and `Write` — for shell-based writes the hook cannot remind you, which makes this skill the only gate. That is a reason to be *more* careful with Bash writes, not less.
 
+**Codex:** the same file triggers and checklist apply to `apply_patch`. The separate Codex hook checks every touched path, including rename destinations; it does not watch shell writes. Its cleanup flag is separate from Claude Code's; use the Codex commands in Step 0 and the Final step of `instruction-cleanup`.
+
 ### Exception: approved `instruction-cleanup` Phase-3 plans
 
 The **one** carve-out. When you are executing Edits that implement an already-approved `instruction-cleanup` Phase-3 plan, skip the per-Edit guardian checklist. Phase 2 of `instruction-cleanup` already applies the same litmus test ("would removing this cause the agent to make mistakes?"), routes each section through an equivalent flowchart, and has been explicitly approved by the user — that IS the guardian pass, done in batch form.

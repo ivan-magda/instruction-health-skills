@@ -179,13 +179,15 @@ Execute the approved plan, then verify nothing was lost.
 
 Phase 3 Edits do **not** require per-file `instruction-guardian` invocation — the approved Phase-2 plan IS the guardian pass (same litmus test, same routing flowchart, with explicit user approval). The plugin mechanizes this carve-out via a per-project flag file in the system tmpdir: when the flag is present, the guardian's `PreToolUse` hook suppresses its reminder for matching Edits. Phase 3 owns the flag's lifecycle (create on approval, remove on completion). The flag never lives inside the consumer's repo, so `.gitignore` is not involved.
 
-**Standalone use:** the flag matters only when the `instruction-health` Claude Code plugin's hooks are installed. With a skills-only install (skills.sh, manual copy, or a non-Claude tool) nothing reads it — Step 0 and the Final step become harmless no-ops you may skip, and the carve-out rests entirely on the Exception section in `instruction-guardian`.
+**Standalone use:** the flag matters only when the `instruction-health` plugin's hooks are active in Claude Code or Codex. With a skills-only install (skills.sh or manual copy) nothing reads it — Step 0 and the Final step become harmless no-ops you may skip, and the carve-out rests entirely on the Exception section in `instruction-guardian`.
 
 Run guardian only when a Phase 3 Edit deviates from the approved plan — scope creep, newly discovered sections, ad-hoc additions, or content you decide to handle differently. A deviating Edit should disarm the flag (see "Final step" below) before running, or accept that the hook will not fire for it. If you disarmed the flag and approved-plan Edits remain, re-arm it by re-running Step 0 before resuming them — the plan's carve-out still applies to those Edits.
 
 ### Step 0 — Arm the carve-out (immediately after Phase-2 approval)
 
-Before any Edits, create the flag so the guardian hook stays silent for the rest of Phase 3:
+Before any Edits, create the flag for your tool so the guardian hook stays silent for the rest of Phase 3.
+
+**Claude Code:**
 
 ```sh
 # CLAUDE_PROJECT_DIR is set for hooks, not for your shell — the $PWD fallback
@@ -196,6 +198,15 @@ touch "$flag"
 ```
 
 The flag lives in the system tmpdir, keyed by a `cksum` of the project root (`CLAUDE_PROJECT_DIR` inside hooks; your cwd when you run the snippet — which must therefore be the project root), so it scopes per-project and never enters the repo. Re-run this step if the session restarts mid-Phase-3 — the `SessionStart` hook clears the flag at every session start. If the guardian reminder still fires on the first Phase-3 Edit, the flag key did not match; re-run the snippet from the project root.
+
+**Codex:** run this command from the session's working directory. Use the same `TMPDIR` as the hooks. Keep this directory for the Final step.
+
+```sh
+flag="${TMPDIR:-/tmp}/instruction-health-codex-cleanup-$(printf '%s' "$(pwd -P)" | cksum | awk '{print $1}').flag"
+touch "$flag"
+```
+
+Codex uses a separate flag. `pwd -P` resolves filesystem aliases. Codex clears its flag on startup, resume, and clear. Compaction preserves it. After a restart or resume, create the flag again only if the approved plan still applies.
 
 ### Implementation Order
 
@@ -234,9 +245,18 @@ If a key term is unreachable — not inline in an always-loaded file, and not in
 
 Once the verification grep is clean, remove the flag so guardian reminders re-enable for any subsequent edits:
 
+**Claude Code:**
+
 ```sh
 # Run from the project root, as in Step 0, so the key matches.
 flag="${TMPDIR:-/tmp}/instruction-health-cleanup-$(printf '%s' "${CLAUDE_PROJECT_DIR:-$PWD}" | cksum | awk '{print $1}').flag"
+rm -f "$flag"
+```
+
+**Codex:** run this command from the same directory as Step 0. Also remove the flag before an edit that deviates from the approved plan.
+
+```sh
+flag="${TMPDIR:-/tmp}/instruction-health-codex-cleanup-$(printf '%s' "$(pwd -P)" | cksum | awk '{print $1}').flag"
 rm -f "$flag"
 ```
 

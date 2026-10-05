@@ -2,20 +2,14 @@
   "name": "instruction-health",
   "version": "1.4.0",
   "description": "Keep CLAUDE.md, AGENTS.md, MEMORY.md, and related instruction files lean. A reactive guardian runs pre-write checks; a three-phase cleanup restructures bloated files.",
-  "author": {
-    "name": "Ivan Magda"
-  },
+  "author": { "name": "Ivan Magda" },
   "repository": "https://github.com/ivan-magda/instruction-health-skills",
   "license": "MIT",
-  "keywords": [
-    "claude-code",
-    "agents-md",
-    "instruction-files",
-    "context-budget",
-    "skills",
-    "memory",
-    "ai-agents",
-    "prompt-engineering"
-  ],
-  "skills": ["./instruction-cleanup", "./instruction-guardian"]
+  "skills": ["./instruction-cleanup", "./instruction-guardian"],
+  "hooks": "./hooks/codex-hooks.json",
+  "interface": {
+    "displayName": "Instruction Health",
+    "shortDescription": "Keep agent instructions lean",
+    "category": "Developer Tools"
+  }
 }

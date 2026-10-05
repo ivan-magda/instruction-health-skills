@@ -1,0 +1,21 @@
+{
+  "description": "Guardian reminder + cleanup-flag lifecycle for Codex",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^apply_patch$",
+        "hooks": [
+          { "type": "command", "command": "sh \"${PLUGIN_ROOT}/hooks/codex-guardian-reminder.sh\"" }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "^(startup|resume|clear)$",
+        "hooks": [
+          { "type": "command", "command": "sh \"${PLUGIN_ROOT}/hooks/codex-clear-cleanup-flag.sh\"" }
+        ]
+      }
+    ]
+  }
+}

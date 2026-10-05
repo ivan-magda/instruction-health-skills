@@ -107,7 +107,24 @@ To provide both skills to everyone working in a repository, configure the reposi
 
 When team members open the project, Claude Code prompts them to install the plugin.
 
-### Option C: Manual install
+### Option C: Codex plugin
+
+Requirements: Codex with hook support, a POSIX shell, and `python3`.
+
+Clone this repository. Replace the path below with the full path to your local copy. Then run these commands:
+
+```bash
+codex plugin marketplace add /absolute/path/to/instruction-health-skills
+codex plugin add instruction-health@instruction-health-skills
+```
+
+Start a new Codex session. Open `/hooks`. Review and trust both hooks.
+
+If you disabled hooks, set `hooks = true` under `[features]` in `~/.codex/config.toml`. See the [Codex hook instructions](https://learn.chatgpt.com/docs/hooks).
+
+Codex receives a guardian reminder before it changes an instruction file with `apply_patch`. The reminder does not block the change. Before changes through shell commands or MCP tools, ask Codex to use `instruction-guardian`.
+
+### Option D: Manual install
 
 1. **Clone** this repository.
 2. **Symlink both skill folders** into your tool's skills directory. For Claude Code:
@@ -144,8 +161,16 @@ instruction-health-skills/
 ├── .claude-plugin/
 │   ├── plugin.json                      # Claude Code plugin manifest
 │   └── marketplace.json                 # Claude Code marketplace catalog
+├── .codex-plugin/
+│   └── plugin.json                      # Codex manifest, same skill folders
+├── .agents/plugins/
+│   └── marketplace.json                 # Codex marketplace catalog
 ├── hooks/
-│   ├── hooks.json                       # PreToolUse + SessionStart hook wiring
+│   ├── hooks.json                       # Claude Code hook wiring
+│   ├── codex-hooks.json                 # Codex hook wiring
+│   ├── codex-guardian-reminder.sh        # Codex-only pre-patch reminder
+│   ├── codex-clear-cleanup-flag.sh       # Codex-only flag reset
+│   ├── codex-patch-paths.py              # Decode paths from Codex apply_patch JSON
 │   ├── guardian-reminder.sh             # Reminds the agent to invoke instruction-guardian pre-edit
 │   └── clear-cleanup-flag.sh            # Clears a stale cleanup carve-out flag at session start
 ├── instruction-cleanup/
@@ -153,7 +178,8 @@ instruction-health-skills/
 ├── instruction-guardian/
 │   └── SKILL.md                         # Six-step pre-write checklist
 └── tests/
-    └── hook-unit-tests.sh               # Unit tests for both hook scripts
+    ├── hook-unit-tests.sh               # Original Claude Code regression tests
+    └── codex-hook-tests.py              # Codex and cross-host integration tests
 ```
 
 ## Contributing
